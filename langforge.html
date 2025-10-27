@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinguaForge MVP - Language Evolution Simulator</title>
+    <title>LinguaForge - Language Evolution Simulator</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -30,6 +30,7 @@
             padding: 20px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 15px;
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
 
@@ -61,8 +62,13 @@
             background: rgba(0, 0, 0, 0.4);
             border-radius: 10px;
             padding: 20px;
+            -webkit-backdrop-filter: blur(5px);
             backdrop-filter: blur(5px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel.full-width {
+            grid-column: 1 / -1;
         }
 
         .panel h2 {
@@ -99,11 +105,19 @@
             transform: translateY(0);
         }
 
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         select, input {
             padding: 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
             background: rgba(255, 255, 255, 0.9);
+        }
+        #innovationRate {
+            width: 100%;
         }
 
         .metrics-grid {
@@ -150,6 +164,12 @@
             justify-content: center;
             font-weight: bold;
             transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .agent:hover {
+            transform: scale(1.2);
+            z-index: 100;
         }
 
         .communication-line {
@@ -158,6 +178,7 @@
             background: #fdbb2d;
             transform-origin: 0 0;
             transition: all 0.3s ease;
+            pointer-events: none;
         }
 
         .log {
@@ -180,6 +201,7 @@
         .success { color: #4CAF50; }
         .failure { color: #f44336; }
         .innovation { color: #2196F3; }
+        .grammar { color: #9C27B0; }
 
         .vocabulary-list {
             max-height: 200px;
@@ -202,30 +224,137 @@
             font-size: 0.8em;
             margin-left: 10px;
         }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        .grammar-pattern {
+            background: rgba(156, 39, 176, 0.2);
+            padding: 5px 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #9C27B0;
+        }
+
+        .translation-result {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .agent-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .experiment-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .experiment-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            opacity: 0.7;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .word-order-viz {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .word-order-bar {
+            flex: 1;
+            min-width: 150px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fdbb2d, #b21f1f);
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🗣️ LinguaForge MVP</h1>
+            <h1>🗣️ LinguaForge</h1>
             <div class="subtitle">Watch Language Emerge from Communication Pressure</div>
         </header>
 
         <div class="dashboard">
+            <!-- Controls Panel -->
             <div class="panel">
                 <h2>🌍 Simulation Controls</h2>
                 <div class="controls">
                     <button id="startBtn">▶️ Start</button>
                     <button id="pauseBtn">⏸️ Pause</button>
                     <button id="resetBtn">🔄 Reset</button>
-                    <select id="simulationMode">
-                        <option value="natural">🌱 Natural Evolution</option>
-                        <option value="island">🏝️ Island Isolation</option>
-                        <option value="child">🧒 Child Acquisition</option>
-                    </select>
-                    <input type="number" id="populationSize" value="20" min="5" max="50">
+                    <button id="exportBtn">💾 Export Data</button>
                 </div>
+                
+                <label>Population Size: <span id="popSizeValue">20</span></label>
+                <input type="range" id="populationSize" min="1" max="50" value="20" title="Set population size" placeholder="Population size">
+                
+                <label>Innovation Rate: <span id="innovationValue">10%</span></label>
+                <input type="range" id="innovationRate" min="1" max="50" value="10" title="Set innovation rate" placeholder="Innovation rate">
+                
+                <label>Communication Complexity:</label>
+                <select id="complexityLevel" title="Set communication complexity">
+                    <option value="basic">Basic (Single concepts)</option>
+                    <option value="compound" selected>Compound (Two concepts)</option>
+                    <option value="complex">Complex (Multiple concepts)</option>
+                </select>
 
+                <div class="help-text">
+                    💡 Tip: Higher innovation creates more vocabulary variation. Compound concepts force compositional grammar to emerge.
+                </div>
+            </div>
+
+            <!-- Metrics Panel -->
+            <div class="panel">
+                <h2>📊 Language Metrics</h2>
                 <div class="metrics-grid">
                     <div class="metric">
                         <div class="metric-value" id="generation">0</div>
@@ -233,164 +362,444 @@
                     </div>
                     <div class="metric">
                         <div class="metric-value" id="vocabularySize">0</div>
-                        <div class="metric-label">Vocabulary</div>
+                        <div class="metric-label">Total Words</div>
                     </div>
                     <div class="metric">
                         <div class="metric-value" id="successRate">0%</div>
                         <div class="metric-label">Success Rate</div>
                     </div>
                     <div class="metric">
-                        <div class="metric-value" id="languageStage">Gestural</div>
+                        <div class="metric-value" id="grammarRules">0</div>
+                        <div class="metric-label">Grammar Patterns</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="compositionality">0%</div>
+                        <div class="metric-label">Compositionality</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="languageStage">Gestural 👆</div>
                         <div class="metric-label">Language Stage</div>
                     </div>
                 </div>
+            </div>
 
-                <div class="visualization" id="worldCanvas">
-                    <!-- Agents and communication lines will be rendered here -->
+            <!-- Agent Visualization -->
+            <div class="panel full-width">
+                <h2>🌐 Communication Network</h2>
+                <div class="visualization" id="worldCanvas"></div>
+                <div class="help-text">
+                    Green lines = successful communication | Red lines = failed communication | Click agents to see their vocabulary
                 </div>
             </div>
 
+            <!-- Success Rate Graph -->
             <div class="panel">
-                <h2>📊 Language Evolution</h2>
-                <div class="log" id="eventLog">
-                    <div class="log-entry">Simulation ready. Click Start to begin!</div>
+                <h2>📈 Success Rate Over Time</h2>
+                <div class="chart-container">
+                    <canvas id="successChart"></canvas>
                 </div>
-                
-                <h3>📚 Evolving Vocabulary</h3>
+            </div>
+
+            <!-- Word Order Convergence -->
+            <div class="panel">
+                <h2>📝 Word Order Preference</h2>
+                <div class="word-order-viz">
+                    <div class="word-order-bar">
+                        <div>Concept-Modifier</div>
+                        <div style="font-size: 0.8em; opacity: 0.7;">(e.g., "food tree")</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="orderBar1" style="width: 50%"></div>
+                        </div>
+                        <div id="orderPercent1">50%</div>
+                    </div>
+                    <div class="word-order-bar">
+                        <div>Modifier-Concept</div>
+                        <div style="font-size: 0.8em; opacity: 0.7;">(e.g., "tree food")</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="orderBar2" style="width: 50%"></div>
+                        </div>
+                        <div id="orderPercent2">50%</div>
+                    </div>
+                </div>
+                <div class="help-text">
+                    Watch agents converge on a shared word order through successful communication
+                </div>
+            </div>
+
+            <!-- Vocabulary Panel -->
+            <div class="panel">
+                <h2>📚 Common Vocabulary</h2>
                 <div class="vocabulary-list" id="vocabularyList">
-                    <!-- Vocabulary will be listed here -->
+                    <div style="opacity: 0.5; text-align: center; padding: 20px;">
+                        Start simulation to see vocabulary emerge...
+                    </div>
                 </div>
+            </div>
+
+            <!-- Grammar Patterns -->
+            <div class="panel">
+                <h2>🔤 Emerging Grammar</h2>
+                <div id="grammarPatterns">
+                    <div style="opacity: 0.5; text-align: center; padding: 20px;">
+                        Grammar patterns will appear as language evolves...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Translation Feature -->
+            <div class="panel">
+                <h2>🔄 Translation Test</h2>
+                <input type="text" id="conceptInput" placeholder="Enter concept (e.g., 'food tree')" 
+                       style="width: calc(100% - 100px); margin-right: 10px;">
+                <button onclick="translateConcept()">Translate</button>
+                <div id="translationResults" style="margin-top: 10px;"></div>
+            </div>
+
+            <!-- Experiments -->
+            <div class="panel">
+                <h2>🧪 Quick Experiments</h2>
+                <div class="experiment-card" onclick="runExperiment('smallPop')">
+                    <strong>👥 Small Population</strong>
+                    <div style="font-size: 0.9em; opacity: 0.8;">5 agents - faster convergence, less diversity</div>
+                </div>
+                <div class="experiment-card" onclick="runExperiment('highInnovation')">
+                    <strong>💡 High Innovation</strong>
+                    <div style="font-size: 0.9em; opacity: 0.8;">30% innovation rate - chaotic creativity</div>
+                </div>
+                <div class="experiment-card" onclick="runExperiment('complexConcepts')">
+                    <strong>🧩 Complex Concepts</strong>
+                    <div style="font-size: 0.9em; opacity: 0.8;">Force compositional grammar to emerge</div>
+                </div>
+            </div>
+
+            <!-- Event Log -->
+            <div class="panel">
+                <h2>📜 Event Log</h2>
+                <div class="log" id="eventLog"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // ============================================
+        // LANGUAGE AGENT CLASS
+        // ============================================
         class LanguageAgent {
             constructor(id, x, y) {
                 this.id = id;
                 this.x = x;
                 this.y = y;
-                this.lexicon = new Map(); // word -> meaning
-                this.grammar = [];
+                this.color = this.generateColor();
+                this.lexicon = new Map(); // word -> [meanings]
+                this.grammar = new Map(); // pattern -> usage_count
                 this.communicationHistory = [];
-                this.successCount = 0;
-                this.totalAttempts = 0;
-                this.color = this.getRandomColor();
+                this.successfulCommunications = 0;
+                this.totalCommunications = 0;
+                this.wordOrderPreference = Math.random(); // 0 = concept-modifier, 1 = modifier-concept
             }
 
-            getRandomColor() {
-                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
-                return colors[Math.floor(Math.random() * colors.length)];
+            generateColor() {
+                const hue = Math.random() * 360;
+                return `hsl(${hue}, 70%, 60%)`;
             }
 
-            getSuccessRate() {
-                return this.totalAttempts === 0 ? 0 : (this.successCount / this.totalAttempts) * 100;
-            }
-
-            inventWord(meaning) {
-                // Create a random "word" (combination of syllables)
-                const syllables = ['ba', 'da', 'ka', 'la', 'ma', 'na', 'pa', 'ta', 'ga', 'sa'];
-                const wordLength = Math.floor(Math.random() * 2) + 1; // 1-2 syllables
+            // Invent a new word with realistic phonology
+            inventWord() {
+                const consonants = 'ptkbdgmnslrfv';
+                const vowels = 'aeiou';
+                const numSyllables = Math.floor(Math.random() * 2) + 1;
                 let word = '';
-                for (let i = 0; i < wordLength; i++) {
-                    word += syllables[Math.floor(Math.random() * syllables.length)];
+                
+                for (let i = 0; i < numSyllables; i++) {
+                    word += consonants[Math.floor(Math.random() * consonants.length)];
+                    word += vowels[Math.floor(Math.random() * vowels.length)];
                 }
                 
-                this.lexicon.set(word, meaning);
                 return word;
             }
 
+            // Get word for a meaning (or compose from parts)
             getWordFor(meaning) {
-                // Try to find existing word for meaning
-                for (let [word, existingMeaning] of this.lexicon) {
-                    if (existingMeaning === meaning) {
+                // Check if we have a direct word for this meaning
+                for (let [word, meanings] of this.lexicon.entries()) {
+                    if (meanings.includes(meaning)) {
                         return word;
                     }
                 }
-                // Invent new word if none exists
-                return this.inventWord(meaning);
+
+                // Try to compose if meaning is compound (e.g., "food tree")
+                if (meaning.includes(' ')) {
+                    const parts = meaning.split(' ');
+                    const words = [];
+                    
+                    for (let part of parts) {
+                        let word = null;
+                        for (let [w, meanings] of this.lexicon.entries()) {
+                            if (meanings.includes(part)) {
+                                word = w;
+                                break;
+                            }
+                        }
+                        
+                        if (word) {
+                            words.push(word);
+                        } else {
+                            // Can't compose - missing a word
+                            return null;
+                        }
+                    }
+                    
+                    if (words.length === parts.length) {
+                        // We can compose this!
+                        return this.composePhrase(words);
+                    }
+                }
+
+                return null;
             }
 
-            interpret(word) {
-                return this.lexicon.get(word);
-            }
-
-            communicate(partner, meaning) {
-                const word = this.getWordFor(meaning);
-                const understood = partner.interpret(word) === meaning;
+            // Compose a phrase based on word order preference
+            composePhrase(words) {
+                if (words.length !== 2) return words.join(' ');
                 
-                this.totalAttempts++;
-                partner.totalAttempts++;
+                if (this.wordOrderPreference < 0.5) {
+                    return words.join(' '); // Original order
+                } else {
+                    return words.reverse().join(' '); // Reversed order
+                }
+            }
+
+            // Learn word order from successful communications
+            learnWordOrder(phrase, success) {
+                if (!phrase.includes(' ') || !success) return;
+                
+                const words = phrase.split(' ');
+                if (words.length !== 2) return;
+                
+                // If successful, shift preference toward this order
+                // Original order increases preference toward 0
+                // We need to detect if this was original or reversed
+                // For simplicity, just nudge based on success
+                const nudge = 0.05;
+                
+                if (Math.random() < 0.5) {
+                    this.wordOrderPreference = Math.max(0, this.wordOrderPreference - nudge);
+                } else {
+                    this.wordOrderPreference = Math.min(1, this.wordOrderPreference + nudge);
+                }
+            }
+
+            // Main communication function
+            communicate(partner, meaning) {
+                this.totalCommunications++;
+                
+                let word = this.getWordFor(meaning);
+                
+                if (!word) {
+                    // Invent new word for this meaning
+                    word = this.inventWord();
+                    this.lexicon.set(word, [meaning]);
+                }
+
+                const understood = partner.understand(word, meaning);
                 
                 if (understood) {
-                    this.successCount++;
-                    partner.successCount++;
-                    // Reinforce successful communication
-                    partner.lexicon.set(word, meaning);
-                } else {
-                    // Partner learns the word from context
-                    partner.lexicon.set(word, meaning);
+                    this.successfulCommunications++;
+                    this.learnWordOrder(word, true);
                 }
+
+                this.communicationHistory.push(understood);
                 
-                this.communicationHistory.push({
-                    partner: partner.id,
-                    word,
-                    meaning,
-                    success: understood,
-                    timestamp: Date.now()
-                });
-                
+                // Track grammar patterns
+                if (word.includes(' ')) {
+                    const pattern = word.split(' ').map(() => 'X').join(' ');
+                    this.grammar.set(pattern, (this.grammar.get(pattern) || 0) + 1);
+                }
+
                 return { word, understood };
+            }
+
+            // Understand incoming message
+            understand(word, intendedMeaning) {
+                // Check if we know this word
+                const knownMeanings = this.lexicon.get(word) || [];
+                
+                if (knownMeanings.includes(intendedMeaning)) {
+                    // We understand correctly!
+                    return true;
+                }
+
+                // Try to understand compound expressions
+                if (word.includes(' ')) {
+                    const words = word.split(' ');
+                    const meanings = [];
+                    
+                    for (let w of words) {
+                        const wordMeanings = this.lexicon.get(w);
+                        if (wordMeanings && wordMeanings.length > 0) {
+                            meanings.push(wordMeanings[0]);
+                        } else {
+                            // Don't know a component word
+                            return false;
+                        }
+                    }
+                    
+                    const composedMeaning = meanings.join(' ');
+                    if (composedMeaning === intendedMeaning) {
+                        return true;
+                    }
+                }
+
+                // We don't understand - learn this word-meaning pair
+                if (Math.random() < 0.7) { // 70% chance to learn from failure
+                    knownMeanings.push(intendedMeaning);
+                    this.lexicon.set(word, knownMeanings);
+                }
+
+                return false;
+            }
+
+            getSuccessRate() {
+                if (this.totalCommunications === 0) return 0;
+                return (this.successfulCommunications / this.totalCommunications) * 100;
+            }
+
+            getCompositionalityScore() {
+                let compoundCount = 0;
+                let totalCount = 0;
+
+                for (let [word, meanings] of this.lexicon.entries()) {
+                    totalCount++;
+                    if (word.includes(' ')) {
+                        compoundCount++;
+                    }
+                }
+
+                return totalCount === 0 ? 0 : (compoundCount / totalCount) * 100;
             }
         }
 
+        // ============================================
+        // MAIN SIMULATION CLASS
+        // ============================================
         class LinguaForgeSimulation {
             constructor() {
                 this.agents = [];
                 this.generation = 0;
                 this.isRunning = false;
-                this.concepts = ['food', 'water', 'danger', 'come', 'go', 'help', 'friend', 'enemy'];
                 this.animationId = null;
-                this.simulationSpeed = 1000; // ms between generations
-                
-                // DOM elements
+                this.simulationSpeed = 1000;
+
+                // Concepts that agents need to communicate
+                this.basicConcepts = ['food', 'water', 'danger', 'shelter', 'tool'];
+                this.modifiers = ['big', 'small', 'near', 'far', 'good', 'bad'];
+                this.concepts = [...this.basicConcepts];
+
+                // Success rate history for graphing
+                this.successHistory = [];
+                this.maxHistoryLength = 50;
+
+                // UI Elements
                 this.worldCanvas = document.getElementById('worldCanvas');
                 this.eventLog = document.getElementById('eventLog');
                 this.vocabularyList = document.getElementById('vocabularyList');
+                this.grammarPatterns = document.getElementById('grammarPatterns');
+                
                 this.generationElement = document.getElementById('generation');
                 this.vocabularySizeElement = document.getElementById('vocabularySize');
                 this.successRateElement = document.getElementById('successRate');
+                this.grammarRulesElement = document.getElementById('grammarRules');
+                this.compositionalityElement = document.getElementById('compositionality');
                 this.languageStageElement = document.getElementById('languageStage');
-                
-                this.initializeEventListeners();
-                this.resetSimulation();
+
+                this.successChart = document.getElementById('successChart');
+                this.successCtx = this.successChart.getContext('2d');
+
+                this.setupEventListeners();
+                this.reset();
             }
 
-            initializeEventListeners() {
+            setupEventListeners() {
                 document.getElementById('startBtn').addEventListener('click', () => this.start());
                 document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
-                document.getElementById('resetBtn').addEventListener('click', () => this.resetSimulation());
-            }
-
-            resetSimulation() {
-                this.pause();
-                this.agents = [];
-                this.generation = 0;
-                this.updateMetrics();
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportData());
                 
-                const populationSize = parseInt(document.getElementById('populationSize').value) || 20;
-                this.initializeAgents(populationSize);
-                this.renderWorld();
-                this.logEvent('Simulation reset with ' + populationSize + ' agents');
+                document.getElementById('populationSize').addEventListener('input', (e) => {
+                    document.getElementById('popSizeValue').textContent = e.target.value;
+                });
+                
+                document.getElementById('innovationRate').addEventListener('input', (e) => {
+                    document.getElementById('innovationValue').textContent = e.target.value + '%';
+                });
+
+                document.getElementById('complexityLevel').addEventListener('change', (e) => {
+                    this.updateConceptComplexity(e.target.value);
+                });
+
+                // Click agents to see their vocabulary
+                this.worldCanvas.addEventListener('click', (e) => {
+                    const rect = this.worldCanvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    for (let agent of this.agents) {
+                        const dx = agent.x - x;
+                        const dy = agent.y - y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 20) {
+                            this.showAgentVocabulary(agent);
+                            break;
+                        }
+                    }
+                });
             }
 
-            initializeAgents(count) {
-                this.agents = [];
-                for (let i = 0; i < count; i++) {
-                    const x = 50 + Math.random() * (this.worldCanvas.offsetWidth - 100);
-                    const y = 50 + Math.random() * (this.worldCanvas.offsetHeight - 100);
-                    this.agents.push(new LanguageAgent(i, x, y));
+            updateConceptComplexity(level) {
+                switch(level) {
+                    case 'basic':
+                        this.concepts = [...this.basicConcepts];
+                        break;
+                    case 'compound':
+                        this.concepts = [
+                            ...this.basicConcepts,
+                            ...this.basicConcepts.map(c => 
+                                this.modifiers.map(m => `${m} ${c}`)
+                            ).flat().slice(0, 10)
+                        ];
+                        break;
+                    case 'complex':
+                        this.concepts = [
+                            ...this.basicConcepts,
+                            ...this.basicConcepts.map(c => 
+                                this.modifiers.map(m => `${m} ${c}`)
+                            ).flat()
+                        ];
+                        break;
                 }
+                this.logEvent(`Concept complexity changed to ${level}`);
+            }
+
+            reset() {
+                this.pause();
+                this.generation = 0;
+                this.agents = [];
+                this.successHistory = [];
+                
+                const populationSize = parseInt(document.getElementById('populationSize').value);
+                const canvasWidth = this.worldCanvas.offsetWidth;
+                const canvasHeight = this.worldCanvas.offsetHeight;
+                
+                for (let i = 0; i < populationSize; i++) {
+                    const x = Math.random() * (canvasWidth - 40) + 20;
+                    const y = Math.random() * (canvasHeight - 40) + 20;
+                    this.agents.push(new LanguageAgent(i + 1, x, y));
+                }
+                
+                this.updateMetrics();
+                this.renderWorld();
+                this.logEvent('Simulation reset', 'info');
             }
 
             start() {
@@ -421,6 +830,8 @@
                 this.generation++;
                 this.updateMetrics();
                 this.renderWorld();
+                this.drawSuccessChart();
+                this.updateWordOrderVisualization();
                 
                 if (this.isRunning) {
                     this.animationId = setTimeout(() => this.runGeneration(), this.simulationSpeed);
@@ -431,9 +842,9 @@
                 // Clear previous communication lines
                 document.querySelectorAll('.communication-line').forEach(el => el.remove());
                 
-                // Each agent communicates with 1-2 others
+                // Each agent communicates with 2-3 others
                 this.agents.forEach(agent => {
-                    const numCommunications = Math.floor(Math.random() * 2) + 1;
+                    const numCommunications = Math.floor(Math.random() * 2) + 2;
                     for (let i = 0; i < numCommunications; i++) {
                         const partner = this.getRandomPartner(agent);
                         const meaning = this.concepts[Math.floor(Math.random() * this.concepts.length)];
@@ -443,11 +854,22 @@
                         this.visualizeCommunication(agent, partner, result.understood);
                         
                         // Log interesting events
-                        if (!result.understood && Math.random() < 0.3) {
-                            this.logEvent(`Agent ${agent.id} invented new word "${result.word}" for "${meaning}"`, 'innovation');
+                        if (!result.understood && Math.random() < 0.15) {
+                            this.logEvent(`Agent ${agent.id} → "${result.word}" for "${meaning}"`, 'innovation');
+                        }
+                        
+                        if (result.understood && result.word.includes(' ') && Math.random() < 0.1) {
+                            this.logEvent(`Compositional success: "${result.word}" for "${meaning}"`, 'grammar');
                         }
                     }
                 });
+
+                // Record success rate
+                const avgSuccess = this.getAverageSuccessRate();
+                this.successHistory.push(avgSuccess);
+                if (this.successHistory.length > this.maxHistoryLength) {
+                    this.successHistory.shift();
+                }
             }
 
             getRandomPartner(agent) {
@@ -476,114 +898,282 @@
                 
                 this.worldCanvas.appendChild(line);
                 
-                // Remove line after animation
                 setTimeout(() => {
                     if (line.parentNode) {
                         line.parentNode.removeChild(line);
                     }
-                }, 800);
+                }, 600);
             }
 
             evolveLanguage() {
-                // Language evolves based on success rates
                 const avgSuccessRate = this.getAverageSuccessRate();
+                const innovationRate = parseInt(document.getElementById('innovationRate').value) / 100;
                 
                 // Agents with low success rates learn from successful ones
                 this.agents.forEach(agent => {
-                    if (agent.getSuccessRate() < avgSuccessRate) {
+                    if (agent.getSuccessRate() < avgSuccessRate - 10) {
                         const successfulAgent = this.agents.reduce((best, current) => 
                             current.getSuccessRate() > best.getSuccessRate() ? current : best
                         );
                         
-                        // Learn some words from successful agent
-                        successfulAgent.lexicon.forEach((meaning, word) => {
-                            if (Math.random() < 0.3) { // 30% chance to learn each word
-                                agent.lexicon.set(word, meaning);
+                        // Learn 1-2 words from successful agent
+                        const wordsToLearn = Array.from(successfulAgent.lexicon.entries())
+                            .sort(() => Math.random() - 0.5)
+                            .slice(0, 2);
+
+                        wordsToLearn.forEach(([word, meanings]) => {
+                            agent.lexicon.set(word, [...meanings]);
+                        });
+                    }
+                    
+                    // Occasional innovation
+                    if (Math.random() < innovationRate) {
+                        const randomConcept = this.concepts[Math.floor(Math.random() * this.concepts.length)];
+                        if (!agent.getWordFor(randomConcept)) {
+                            const newWord = agent.inventWord();
+                            agent.lexicon.set(newWord, [randomConcept]);
+                        }
+                    }
+                });
+
+                // Grammar pattern convergence
+                this.convergeGrammar();
+            }
+
+            convergeGrammar() {
+                // Find most successful grammar patterns
+                const allPatterns = new Map();
+                
+                this.agents.forEach(agent => {
+                    agent.grammar.forEach((count, pattern) => {
+                        allPatterns.set(pattern, (allPatterns.get(pattern) || 0) + count);
+                    });
+                });
+
+                // Agents adopt successful patterns
+                if (allPatterns.size > 0) {
+                    const topPattern = Array.from(allPatterns.entries())
+                        .sort((a, b) => b[1] - a[1])[0];
+                    
+                    if (topPattern && topPattern[1] > 5) {
+                        this.agents.forEach(agent => {
+                            if (Math.random() < 0.3) {
+                                agent.grammar.set(topPattern[0], 
+                                    (agent.grammar.get(topPattern[0]) || 0) + 1);
                             }
                         });
                     }
-                });
+                }
             }
 
             getAverageSuccessRate() {
+                if (this.agents.length === 0) return 0;
                 const total = this.agents.reduce((sum, agent) => sum + agent.getSuccessRate(), 0);
+                return total / this.agents.length;
+            }
+
+            getAverageCompositionality() {
+                if (this.agents.length === 0) return 0;
+                const total = this.agents.reduce((sum, agent) => sum + agent.getCompositionalityScore(), 0);
                 return total / this.agents.length;
             }
 
             getLanguageStage() {
                 const vocabSize = this.getTotalVocabularySize();
                 const successRate = this.getAverageSuccessRate();
+                const compositionality = this.getAverageCompositionality();
                 
                 if (vocabSize < 5) return { stage: "Gestural", emoji: "👆" };
                 if (vocabSize < 15) return { stage: "Holistic", emoji: "🔤" };
-                if (vocabSize < 30) return { stage: "Protolanguage", emoji: "📝" };
+                if (compositionality < 10) return { stage: "Protolanguage", emoji: "📝" };
                 if (successRate < 70) return { stage: "Compositional", emoji: "🔠" };
-                return { stage: "Recursive", emoji: "∞" };
+                return { stage: "Mature", emoji: "✨" };
             }
 
             getTotalVocabularySize() {
                 const allWords = new Set();
                 this.agents.forEach(agent => {
-                    agent.lexicon.forEach((meaning, word) => {
+                    agent.lexicon.forEach((meanings, word) => {
                         allWords.add(word);
                     });
                 });
                 return allWords.size;
             }
 
+            getTotalGrammarPatterns() {
+                const allPatterns = new Set();
+                this.agents.forEach(agent => {
+                    agent.grammar.forEach((count, pattern) => {
+                        if (count > 2) allPatterns.add(pattern);
+                    });
+                });
+                return allPatterns.size;
+            }
+
             updateMetrics() {
                 this.generationElement.textContent = this.generation;
                 this.vocabularySizeElement.textContent = this.getTotalVocabularySize();
                 this.successRateElement.textContent = Math.round(this.getAverageSuccessRate()) + '%';
+                this.grammarRulesElement.textContent = this.getTotalGrammarPatterns();
+                this.compositionalityElement.textContent = Math.round(this.getAverageCompositionality()) + '%';
                 
                 const languageStage = this.getLanguageStage();
                 this.languageStageElement.textContent = languageStage.stage + ' ' + languageStage.emoji;
                 
                 this.updateVocabularyList();
+                this.updateGrammarDisplay();
             }
 
             updateVocabularyList() {
-                // Count word frequencies across all agents
                 const wordFrequencies = new Map();
+                const wordMeanings = new Map();
+                
                 this.agents.forEach(agent => {
-                    agent.lexicon.forEach((meaning, word) => {
+                    agent.lexicon.forEach((meanings, word) => {
                         wordFrequencies.set(word, (wordFrequencies.get(word) || 0) + 1);
+                        if (!wordMeanings.has(word)) {
+                            wordMeanings.set(word, meanings[0]);
+                        }
                     });
                 });
                 
-                // Sort by frequency
                 const sortedWords = Array.from(wordFrequencies.entries())
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 10); // Show top 10 words
+                    .slice(0, 15);
                 
                 this.vocabularyList.innerHTML = '';
+                
+                if (sortedWords.length === 0) {
+                    this.vocabularyList.innerHTML = '<div style="opacity: 0.5; text-align: center; padding: 20px;">No vocabulary yet...</div>';
+                    return;
+                }
+                
                 sortedWords.forEach(([word, frequency]) => {
-                    const meaning = this.findCommonMeaning(word);
+                    const meaning = wordMeanings.get(word);
                     const item = document.createElement('div');
                     item.className = 'word-item';
                     item.innerHTML = `
-                        <span>${word}</span>
-                        <span>${meaning}</span>
-                        <span style="color: #fdbb2d">${frequency} agents</span>
+                        <span><strong>${word}</strong></span>
+                        <span style="opacity: 0.7">"${meaning}"</span>
+                        <span style="color: #fdbb2d">${frequency}/${this.agents.length}</span>
                     `;
                     this.vocabularyList.appendChild(item);
                 });
             }
 
-            findCommonMeaning(word) {
-                // Find the most common meaning for a word across agents
-                const meaningCounts = new Map();
+            updateGrammarDisplay() {
+                const allPatterns = new Map();
+                
                 this.agents.forEach(agent => {
-                    const meaning = agent.lexicon.get(word);
-                    if (meaning) {
-                        meaningCounts.set(meaning, (meaningCounts.get(meaning) || 0) + 1);
+                    agent.grammar.forEach((count, pattern) => {
+                        allPatterns.set(pattern, (allPatterns.get(pattern) || 0) + count);
+                    });
+                });
+
+                const sortedPatterns = Array.from(allPatterns.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+
+                this.grammarPatterns.innerHTML = '';
+                
+                if (sortedPatterns.length === 0) {
+                    this.grammarPatterns.innerHTML = '<div style="opacity: 0.5; text-align: center; padding: 20px;">No grammar patterns yet...</div>';
+                    return;
+                }
+
+                sortedPatterns.forEach(([pattern, count]) => {
+                    const item = document.createElement('div');
+                    item.className = 'grammar-pattern';
+                    item.innerHTML = `
+                        <strong>${pattern}</strong> 
+                        <span style="float: right; color: #9C27B0;">used ${count} times</span>
+                    `;
+                    this.grammarPatterns.appendChild(item);
+                });
+            }
+
+            updateWordOrderVisualization() {
+                let concept_modifier = 0;
+                let modifier_concept = 0;
+
+                this.agents.forEach(agent => {
+                    if (agent.wordOrderPreference < 0.5) {
+                        concept_modifier++;
+                    } else {
+                        modifier_concept++;
+                    }
+                });
+
+                const total = concept_modifier + modifier_concept;
+                const percent1 = total > 0 ? Math.round((concept_modifier / total) * 100) : 50;
+                const percent2 = total > 0 ? Math.round((modifier_concept / total) * 100) : 50;
+
+                document.getElementById('orderBar1').style.width = percent1 + '%';
+                document.getElementById('orderBar2').style.width = percent2 + '%';
+                document.getElementById('orderPercent1').textContent = percent1 + '%';
+                document.getElementById('orderPercent2').textContent = percent2 + '%';
+            }
+
+            drawSuccessChart() {
+                const canvas = this.successChart;
+                const ctx = this.successCtx;
+                
+                canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+                canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+                ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                
+                const width = canvas.offsetWidth;
+                const height = canvas.offsetHeight;
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                if (this.successHistory.length < 2) return;
+
+                // Draw grid
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 4; i++) {
+                    const y = (height / 4) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+
+                // Draw success rate line
+                ctx.strokeStyle = '#fdbb2d';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                const xStep = width / (this.maxHistoryLength - 1);
+                
+                this.successHistory.forEach((rate, index) => {
+                    const x = index * xStep;
+                    const y = height - (rate / 100) * height;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
                     }
                 });
                 
-                if (meaningCounts.size === 0) return '?';
+                ctx.stroke();
+
+                // Draw current value
+                ctx.fillStyle = '#fdbb2d';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'right';
+                const currentRate = this.successHistory[this.successHistory.length - 1];
+                ctx.fillText(`${Math.round(currentRate)}%`, width - 10, 20);
+            }
+
+            showAgentVocabulary(agent) {
+                const words = Array.from(agent.lexicon.entries())
+                    .map(([word, meanings]) => `${word} = "${meanings[0]}"`)
+                    .join(', ');
                 
-                return Array.from(meaningCounts.entries())
-                    .reduce((a, b) => a[1] > b[1] ? a : b)[0];
+                this.logEvent(`Agent ${agent.id} vocabulary: ${words || '(empty)'}`, 'info');
             }
 
             logEvent(message, type = 'info') {
@@ -593,14 +1183,16 @@
                 this.eventLog.appendChild(entry);
                 this.eventLog.scrollTop = this.eventLog.scrollHeight;
                 
-                // Keep only last 20 entries
-                while (this.eventLog.children.length > 20) {
+                while (this.eventLog.children.length > 30) {
                     this.eventLog.removeChild(this.eventLog.firstChild);
                 }
             }
 
             renderWorld() {
+                // Keep communication lines, only update agents
+                const existingLines = Array.from(document.querySelectorAll('.communication-line'));
                 this.worldCanvas.innerHTML = '';
+                existingLines.forEach(line => this.worldCanvas.appendChild(line));
                 
                 this.agents.forEach(agent => {
                     const agentElement = document.createElement('div');
@@ -610,14 +1202,101 @@
                     agentElement.style.background = agent.color;
                     agentElement.style.boxShadow = `0 0 10px ${agent.color}`;
                     agentElement.textContent = agent.id;
-                    agentElement.title = `Success: ${Math.round(agent.getSuccessRate())}%`;
+                    agentElement.title = `Agent ${agent.id}\nSuccess: ${Math.round(agent.getSuccessRate())}%\nWords: ${agent.lexicon.size}`;
                     
                     this.worldCanvas.appendChild(agentElement);
                 });
             }
+
+            exportData() {
+                const data = {
+                    generation: this.generation,
+                    agents: this.agents.map(agent => ({
+                        id: agent.id,
+                        lexicon: Array.from(agent.lexicon.entries()),
+                        grammar: Array.from(agent.grammar.entries()),
+                        successRate: agent.getSuccessRate(),
+                        wordOrderPreference: agent.wordOrderPreference
+                    })),
+                    successHistory: this.successHistory,
+                    totalVocabulary: this.getTotalVocabularySize(),
+                    languageStage: this.getLanguageStage()
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `linguaforge-gen${this.generation}.json`;
+                a.click();
+                
+                this.logEvent('Data exported successfully', 'success');
+            }
         }
 
-        // Initialize the simulation when page loads
+        // ============================================
+        // GLOBAL FUNCTIONS
+        // ============================================
+        function translateConcept() {
+            const concept = document.getElementById('conceptInput').value.trim();
+            if (!concept) return;
+            
+            const results = document.getElementById('translationResults');
+            results.innerHTML = '';
+            
+            const translations = window.simulation.agents.map(agent => {
+                const word = agent.getWordFor(concept);
+                return { agent, word };
+            });
+
+            if (translations.every(t => !t.word)) {
+                results.innerHTML = '<div style="opacity: 0.7; padding: 10px;">No agents have a word for this concept yet.</div>';
+                return;
+            }
+
+            translations.forEach(({ agent, word }) => {
+                const div = document.createElement('div');
+                div.className = 'translation-result';
+                div.innerHTML = `
+                    <div class="agent-indicator" style="background: ${agent.color};"></div>
+                    <div style="flex: 1;">
+                        <strong>Agent ${agent.id}:</strong> ${word || '(no word)'}
+                    </div>
+                `;
+                results.appendChild(div);
+            });
+        }
+
+        function runExperiment(type) {
+            window.simulation.pause();
+            
+            switch(type) {
+                case 'smallPop':
+                    document.getElementById('populationSize').value = 5;
+                    document.getElementById('popSizeValue').textContent = 5;
+                    document.getElementById('innovationRate').value = 15;
+                    document.getElementById('innovationValue').textContent = '15%';
+                    break;
+                case 'highInnovation':
+                    document.getElementById('innovationRate').value = 30;
+                    document.getElementById('innovationValue').textContent = '30%';
+                    document.getElementById('complexityLevel').value = 'compound';
+                    break;
+                case 'complexConcepts':
+                    document.getElementById('complexityLevel').value = 'complex';
+                    document.getElementById('populationSize').value = 30;
+                    document.getElementById('popSizeValue').textContent = 30;
+                    break;
+            }
+            
+            window.simulation.reset();
+            
+            setTimeout(() => {
+                window.simulation.start();
+            }, 500);
+        }
+
+        // Initialize simulation when page loads
         document.addEventListener('DOMContentLoaded', () => {
             window.simulation = new LinguaForgeSimulation();
         });
